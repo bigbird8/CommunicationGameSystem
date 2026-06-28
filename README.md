@@ -19,7 +19,7 @@ Microcontroller (AVR) ─── UART/COBS/CRC-8 ──→ Server (WPF) ───
 ### Client-Only Distribution (CommunicationGameSystem.Client-Only.sln)
 - **Client** — Game client only
 - **Shared** — Required shared library
-- Use this solution when distributing to players (no server code included)
+- distributing to players
 
 ## Building
 
@@ -67,7 +67,7 @@ Microcontroller (AVR) ─── UART/COBS/CRC-8 ──→ Server (WPF) ───
 
 ## Microcontroller
 
-The microcontroller code is in `Microcontroller/AtmelStudioProject/main.c` (or `microContorller_side/`).
+The microcontroller code is in `microContorller_side/microContorller_side/main.cpp`.
 
 **Target:** ATmega32 @ 8 MHz  
 **Protocol:** UART 9600 baud, COBS framing, CRC-8 validation  
@@ -99,35 +99,18 @@ See `docs/protocol-design.md` for full UART and TCP protocol specifications.
 - This was caused by the firmware losing received bytes during `_delay_ms()`
   calls (the ATmega32 has only a 2-byte hardware UART buffer). The firmware now
   uses an **interrupt-driven receive ring buffer**, so the server's WELCOME is
-  no longer dropped and the handshake completes. Re-flash `main.cpp` if you see
-  this on an older build.
+  no longer dropped and the handshake completes.
 - Also check COM port selection, Proteus COMPIM wiring, and baud rate (9600).
 
 **Game won't start / "NOT_READY" error:**
 - By design, the game starts only when all connections are made. Ensure the
   server shows UART **Connected** before connecting the client.
 
-**Logs not appearing:**
-- Logs appear in both the mini log (main window) and the full log window.
-- The client now logs live pressure activity during play (throttled to ~1/sec
-  plus every green/red transition), so the log window stays active mid-game.
+**Logs appearing:**
 - Click "Open Full Log" for detailed history.
 
 ---
 
-## Changelog
-
-### Bug-fix pass (2026-06-27)
-- **UART handshake fix (firmware):** RX is now interrupt-driven with a ring
-  buffer, fixing the MCU getting stuck in Handshaking / repeatedly sending HELLO.
-- **Connection gating (server):** the game starts/restarts only when the UART is
-  connected *and* a TCP client is present; otherwise a `NOT_READY` error is sent.
-- **Client logging fix:** TCP log events are marshalled to the UI thread (fixes a
-  cross-thread bug), and live gameplay/pressure is logged so the log window
-  reflects activity while the game runs.
-
----
-
-**License:** Educational project  
-**Author:** [Your Name]  
-**Course:** Communication Systems
+**License:** Educational/University project  
+**Author:** Keivanzadeh  
+**Course:** Communication Systems In Medicine
