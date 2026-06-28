@@ -8,9 +8,18 @@
 
 ## 1. System Overview
 
-```
-Microcontroller ─── UART/COBS/CRC-8 ──→ Server ─── TCP/JSON ──→ WPF Client
-                ←── UART/COBS/CRC-8 ───        ←── TCP/JSON ───
+```mermaid
+flowchart LR
+    MCU[Microcontroller]
+    S[Server]
+    C[WPF Client]
+
+    MCU -- UART / COBS / CRC-8 --> S
+    S -- UART / COBS / CRC-8 --> MCU
+
+    S -- TCP / JSON --> C
+    C -- TCP / JSON --> S
+
 ```
 
 The server is the central authority. It bridges two distinct protocols:
@@ -30,7 +39,7 @@ The server is the central authority. It bridges two distinct protocols:
 
 | Offset | Size | Field   | Description                    |
 |--------|------|---------|--------------------------------|
-| 0      | 1    | TYPE    | Packet type (see §2.3)         |
+| 0      | 1    | TYPE    | Packet type (see section 2.3)  |
 | 1      | 1    | SEQ     | Sequence number (0-255, wraps) |
 | 2      | 1    | LEN     | Payload length in bytes        |
 | 3..N   | LEN  | PAYLOAD | Type-specific data             |
@@ -106,13 +115,13 @@ All messages share a common envelope:
 
 ### 3.3 Message Types
 
-| Type             | Direction       | Key Fields                                | Description             |
-|-----------------|----------------|------------------------------------------|-------------------------|
+| Type            | Direction     | Key Fields                                | Description             |
+|-----------------|----------------|-------------------------------------------|-------------------------|
 | HELLO           | Client→Server  | version                                   | Client initiates        |
 | WELCOME         | Server→Client  | version, session_id                       | Server responds         |
 | READY           | Client→Server  | —                                         | Client ready to play    |
 | GAME_START      | Server→Client  | session_id                                | Game begins             |
-| PRESSURE_DATA   | Server→Client  | pressure, in_green, green_accum, red_consec| Live game data         |
+| PRESSURE_DATA   | Server→Client  | pressure, in_green, green_accum,red_consec| Live game data          |
 | GAME_END        | Server→Client  | result, reason                            | Game finished           |
 | PAUSE_REQUEST   | Client→Server  | —                                         | Request pause           |
 | PAUSE_ACK       | Server→Client  | —                                         | Pause confirmed         |
@@ -126,43 +135,72 @@ All messages share a common envelope:
 | SERVER_SHUTDOWN | Server→Client  | message                                   | Clean shutdown notice   |
 
 ### 3.4 TCP Handshake Sequence
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
 
-```
-Client                    Server
-  │──── HELLO ──────────→│
-  │←─── WELCOME ─────────│
-  │──── READY ──────────→│
-  │←─── GAME_START ──────│
+    Client->>Server: HELLO
+    Server-->>Client: WELCOME
+    Client->>Server: READY
+    Server-->>Client: GAME_START
 ```
 
 ### 3.5 Client State Machine
+```mermaid
+stateDiagram-v2
+    state Disconnected
+    state Connecting
+    state Connected
+    state HandshakeSent
+    state Ready
+    state WaitingForGameStart
+    state Playing
+    state Paused
+    state GameEnded
+    state Error
 
-```
-Disconnected → Connecting → Connected → HandshakeSent → Ready
-→ WaitingForGameStart → Playing ⇄ Paused → GameEnded
-Any connected state → Error → Disconnected
-```
+    Disconnected --> Connecting
+    Connecting --> Connected
+    Connected --> HandshakeSent
+    HandshakeSent --> Ready
+    Ready --> WaitingForGameStart
+    WaitingForGameStart --> Playing
+    Playing --> Paused
+    Paused --> Playing
+    Playing --> GameEnded
 
+    Connected --> Error
+    HandshakeSent --> Error
+    Ready --> Error
+    WaitingForGameStart --> Error
+    Playing --> Error
+    Paused --> Error
+
+    Error --> Disconnected
+```
 ---
 
 ## 4. Protocol Bridge (Server)
 
 The server translates between UART binary and TCP JSON:
 
-| UART Event          | Server Action                    | TCP Output              |
-|--------------------|----------------------------------|-------------------------|
+UART ↔ SERVER:
+| UART Event         | Server Action                     | TCP Output              |
+|--------------------|-----------------------------------|-------------------------|
 | DATA packet        | Process game logic, compute timers| PRESSURE_DATA message   |
-| Win/Lose detected  | End game, send STOP_STREAM       | GAME_END message        |
-| ERROR/timeout      | End game, send STOP_STREAM       | ERROR + GAME_END        |
-| MCU HELLO (reset)  | Re-handshake, end active game    | ERROR + GAME_END        |
+| Win/Lose detected  | End game, send STOP_STREAM        | GAME_END message        |
+| ERROR/timeout      | End game, send STOP_STREAM        | ERROR + GAME_END        |
+| MCU HELLO (reset)  | Re-handshake, end active game     | ERROR + GAME_END        |
 
-| TCP Event           | Server Action                    | UART Output             |
-|--------------------|----------------------------------|-------------------------|
-| READY received     | Start game **only if all links ready** (UART connected + client present); else send `NOT_READY` error | START_STREAM packet |
-| PAUSE_REQUEST      | Pause game                       | STOP_STREAM packet      |
-| RESUME_REQUEST     | Resume game                      | START_STREAM packet     |
-| RESTART_REQUEST    | New session, start game          | START_STREAM packet     |
-| Client disconnect  | End game                         | STOP_STREAM packet      |
+CLIENT ↔ SERVER
+| TCP Event          | Server Action                     | UART Output             |
+|--------------------|-----------------------------------|-------------------------|
+| READY received     | Start game only if all links ready| START_STREAM packet     |
+| PAUSE_REQUEST      | Pause game                        | STOP_STREAM packet      |
+| RESUME_REQUEST     | Resume game                       | START_STREAM packet     |
+| RESTART_REQUEST    | New session, start game           | START_STREAM packet     |
+| Client disconnect  | End game                          | STOP_STREAM packet      |
 
 ---
 
@@ -224,7 +262,7 @@ Connected) → Client**.
 ## 9. Revision Notes (v1.1, 2026-06-27)
 
 - **Firmware RX reliability:** documented and implemented interrupt-driven UART
-  reception (ring buffer) to fix the stuck-handshake bug (see §2.6).
-- **Start gating:** game start/restart now requires all connections (see §8).
+  reception (ring buffer) to fix the stuck-handshake bug (see section2.6).
+- **Start gating:** game start/restart now requires all connections (see section8).
 - **Client logging:** client log events are marshalled to the UI thread and live
   pressure data is logged (throttled) so the log window stays active during play.
