@@ -75,12 +75,20 @@ Wire format: `[COBS-encoded packet bytes] [0x00]`
 
 ### 2.6 UART State Machine
 
-```
-DISCONNECTED ──(send HELLO)──→ HANDSHAKING
-HANDSHAKING  ──(recv WELCOME/HELLO + send READY)──→ CONNECTED
-CONNECTED    ──(recv START_STREAM)──→ STREAMING
-STREAMING    ──(recv STOP_STREAM)──→ CONNECTED
-Any          ──(error/timeout)──→ ERROR → DISCONNECTED
+```mermaid
+stateDiagram-v2
+    DISCONNECTED --> HANDSHAKING : send HELLO
+    HANDSHAKING --> CONNECTED : recv WELCOME/send READY
+
+    CONNECTED --> STREAMING : recv START_STREAM
+    STREAMING --> CONNECTED : recv STOP_STREAM
+
+    DISCONNECTED --> ERROR : error/timeout
+    HANDSHAKING --> ERROR : error/timeout
+    CONNECTED --> ERROR : error/timeout
+    STREAMING --> ERROR : error/timeout
+
+    ERROR --> DISCONNECTED
 ```
 
 > **Implementation requirement (firmware RX):** The ATmega32 USART has only a
