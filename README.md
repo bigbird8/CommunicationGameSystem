@@ -4,9 +4,18 @@ A rehabilitation pressure game system with microcontroller, server bridge, and g
 
 ## Architecture
 
-```
-Microcontroller (AVR) ─── UART/COBS/CRC-8 ──→ Server (WPF) ─── TCP/JSON ──→ Game Client (WPF)
-                      ←── UART/COBS/CRC-8 ───                ←── TCP/JSON ───
+```mermaid
+flowchart LR
+    MCU[Microcontroller]
+    S[Server]
+    C[WPF Client]
+
+    MCU -- UART / COBS / CRC-8 --> S
+    S -- UART / COBS / CRC-8 --> MCU
+
+    S -- TCP / JSON --> C
+    C -- TCP / JSON --> S
+
 ```
 
 ## Projects
@@ -34,7 +43,7 @@ Microcontroller (AVR) ─── UART/COBS/CRC-8 ──→ Server (WPF) ───
 
 ## Running the Server
 
-1. Start `CommunicationGame.Server.exe`
+1. Start `CommunicationGame.Server.exe` (**Not implemented yet.** Use `CommunicationGameSystem.sln`)
 2. Configure:
    - **COM Port:** Select your virtual COM port (from Proteus COMPIM)
    - **Baud Rate:** 9600 (default)
@@ -45,7 +54,7 @@ Microcontroller (AVR) ─── UART/COBS/CRC-8 ──→ Server (WPF) ───
 ## Running the Client
 
 1. Ensure the server is running **and the MCU/UART is connected** first
-2. Start `CommunicationGame.Client.Wpf.exe`
+2. Start `CommunicationGame.Client.Wpf.exe` (**Not implemented yet.** Use `CommunicationGameSystem.Client-Only.sln`)
 3. Enter server **Host** (127.0.0.1 for local) and **Port** (5000)
 4. Click **Connect**
 5. The game starts **only when all links are ready** — the UART/MCU must be
@@ -76,17 +85,6 @@ The microcontroller code is in `microContorller_side/microContorller_side/main.c
 ## Protocol Documentation
 
 See `docs/protocol-design.md` for full UART and TCP protocol specifications.
-
-## Distribution
-
-**For full system (development/testing):**
-- Share entire `CommunicationGameSystem/` folder
-- Open `CommunicationGameSystem.sln`
-
-**For client-only (players/testers):**
-- Share only: `Client/`, `Shared/`, `CommunicationGameSystem.Client-Only.sln`, `README.md`
-- Players open `CommunicationGameSystem.Client-Only.sln` and build
-- They only need the client executable and `Shared.dll`
 
 ## Troubleshooting
 
