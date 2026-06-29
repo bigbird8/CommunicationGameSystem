@@ -110,6 +110,5 @@ See `docs/protocol-design.md` for full UART and TCP protocol specifications.
 ---
 
 **License:** Educational/University project  
-**Author:** R&R 
-
+**Author:** R&R
 **Course:** Communication Systems In Medicine
